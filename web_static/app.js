@@ -10,7 +10,18 @@ const confidence = document.querySelector("#confidence");
 const health = document.querySelector("#health");
 let currentFile = null;
 
-fetch("/health").then(r => r.json()).then(d => health.textContent = d.ok ? "GeoINT ready" : "GeoINT partial").catch(() => health.textContent = "Backend offline");
+fetch("/health")
+  .then(r => r.json())
+  .then(d => {
+    if (!d.ok) {
+      health.textContent = "GeoINT partial";
+    } else if (d.visual_ai) {
+      health.textContent = "GeoINT ready: metadata + visual AI";
+    } else {
+      health.textContent = "GeoINT ready: metadata only";
+    }
+  })
+  .catch(() => health.textContent = "Backend offline");
 
 fileInput.addEventListener("change", () => {
   currentFile = fileInput.files[0] || null;
