@@ -1,11 +1,15 @@
 from __future__ import annotations
 
+import base64
 import json
+import mimetypes
 import os
 import struct
 import subprocess
 import sys
 import tempfile
+import urllib.error
+import urllib.request
 import uuid
 from pathlib import Path
 
@@ -18,6 +22,7 @@ from fastapi.staticfiles import StaticFiles
 ROOT = Path(__file__).resolve().parent
 STATIC = ROOT / "web_static"
 MAX_UPLOAD_BYTES = 12 * 1024 * 1024
+OPENAI_API_URL = "https://api.openai.com/v1/responses"
 
 app = FastAPI(title="GeoINT Web", version="0.1.0")
 app.add_middleware(
@@ -142,6 +147,91 @@ def _basic_guess(meta: dict) -> dict:
     }
 
 
+def _extract_response_text(payload: dict) -> str:
+    if isinstance(payload.get("output_text"), str):
+        return payload["output_text"]
+    chunks: list[str] = []
+    for item in payload.get("output", []):
+        for content in item.get("content", []):
+            text = content.get("text")
+            if isinstance(text, str):
+                chunks.append(text)
+    return "\n".join(chunks).strip()
+
+
+def _json_from_text(text: str) -> dict:
+    cleaned = text.strip()
+    if cleaned.startswith("```"):
+        cleaned = cleaned.strip("`")
+        if cleaned.startswith("json"):
+            cleaned = cleaned[4:]
+    start = cleaned.find("{")
+    end = cleaned.rfind("}")
+    if start >= 0 and end > start:
+        cleaned = cleaned[start : end + 1]
+    return json.loads(cleaned)
+
+
+def _visual_guess(image_path: Path, metadata_markdown: str) -> dict | None:
+    api_key = os.environ.get("OPENAI_API_KEY")
+    if not api_key:
+        return None
+
+    mime = mimetypes.guess_type(image_path.name)[0] or "image/jpeg"
+    image_b64 = base64.b64encode(image_path.read_bytes()).decode("ascii")
+    image_url = f"data:{mime};base64,{image_b64}"
+    prompt = (
+        "You are a careful geolocation analyst. Estimate the country and place from visual clues in the image. "
+        "Use the metadata only as weak supporting evidence. If the exact place is uncertain, give the most likely city/area. "
+        "Return only compact JSON with keys: country, place, confidence, reasoning, alternatives. "
+        "confidence must be one of: low, medium, high.\n\n"
+        f"Metadata report:\n{metadata_markdown[:3000]}"
+    )
+    body = {
+        "model": os.environ.get("GEOINT_VISION_MODEL", "gpt-4.1-mini"),
+        "input": [
+            {
+                "role": "user",
+                "content": [
+                    {"type": "input_text", "text": prompt},
+                    {"type": "input_image", "image_url": image_url},
+                ],
+            }
+        ],
+        "max_output_tokens": 500,
+    }
+    request = urllib.request.Request(
+        OPENAI_API_URL,
+        data=json.dumps(body).encode("utf-8"),
+        headers={
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type": "application/json",
+        },
+        method="POST",
+    )
+    try:
+        with urllib.request.urlopen(request, timeout=45) as response:
+            payload = json.loads(response.read().decode("utf-8"))
+        parsed = _json_from_text(_extract_response_text(payload))
+    except (urllib.error.URLError, TimeoutError, json.JSONDecodeError, KeyError, ValueError) as exc:
+        return {
+            "level": "visual-error",
+            "country": "Unknown from visual analysis",
+            "place": "Visual AI could not analyze this upload.",
+            "confidence": "low",
+            "note": str(exc)[:300],
+        }
+
+    return {
+        "level": "visual-ai",
+        "country": str(parsed.get("country") or "Unknown"),
+        "place": str(parsed.get("place") or "Unknown"),
+        "confidence": str(parsed.get("confidence") or "low"),
+        "note": str(parsed.get("reasoning") or ""),
+        "alternatives": parsed.get("alternatives") or [],
+    }
+
+
 @app.get("/")
 def index() -> FileResponse:
     return FileResponse(STATIC / "index.html")
@@ -149,7 +239,11 @@ def index() -> FileResponse:
 
 @app.get("/health")
 def health() -> dict:
-    return {"ok": True, "meta_py": (ROOT / "meta.py").exists() or (ROOT / "scripts" / "meta.py").exists()}
+    return {
+        "ok": True,
+        "meta_py": (ROOT / "meta.py").exists() or (ROOT / "scripts" / "meta.py").exists(),
+        "visual_ai": bool(os.environ.get("OPENAI_API_KEY")),
+    }
 
 
 @app.post("/api/analyze")
@@ -168,12 +262,13 @@ async def analyze(file: UploadFile = File(...)) -> JSONResponse:
         out_dir = tmp_dir / "out"
         out_dir.mkdir()
         result = _run_meta(image_path, out_dir)
+        guess = _visual_guess(image_path, result["markdown"]) or _basic_guess(result["meta"])
         return JSONResponse(
             {
                 "id": run_id,
                 "filename": file.filename,
                 "bytes": len(raw),
-                "guess": _basic_guess(result["meta"]),
+                "guess": guess,
                 "markdown": result["markdown"],
                 "meta": result["meta"],
             }
