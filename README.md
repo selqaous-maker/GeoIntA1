@@ -1,4 +1,30 @@
-# Lookup data
+# GeoIntA1
+
+GeoIntA1 is a Codex/Claude skill for photo geolocation and OSINT-style location checks.
+
+## Install
+
+```bash
+git clone https://github.com/selqaous-maker/GeoIntA1.git ~/.agents/skills/geoint
+```
+
+Or ask your agent:
+
+```text
+install the skill at github.com/selqaous-maker/GeoIntA1
+```
+
+## Check It Works
+
+```bash
+cd ~/.agents/skills/geoint
+UV_CACHE_DIR=/tmp/uv-cache uv run doctor.py --json
+```
+
+The repository uses a flat layout: `SKILL.md`, Python tools, Markdown references, and JSON lookup tables live in
+the same folder.
+
+## Lookup Data
 
 `clues.py lookup` reads the JSON in this directory. Each file's `_meta` records the source URL, fetch date, and entry count; `clues.py update` refetches from `_meta.source`.
 
