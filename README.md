@@ -41,7 +41,8 @@ Deploy options:
 - Vercel: `vercel.json` is included for the metadata MVP endpoint.
 
 Current web scope: image upload, metadata extraction, GPS detection when present, WhatsApp/export/EXIF report.
-Deep visual geolocation still works best through the agent workflow because it needs browser/search/model tools.
+Set `OPENAI_API_KEY` in the deployment environment to enable visual country/place estimation when the image has
+no GPS metadata. Optional: set `GEOINT_VISION_MODEL` to choose the vision model; defaults to `gpt-4.1-mini`.
 
 ## Lookup Data
 
