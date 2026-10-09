@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import os
+import struct
 import subprocess
 import sys
 import tempfile
@@ -51,6 +52,8 @@ def _run_meta(image_path: Path, out_dir: Path) -> dict:
         timeout=45,
     )
     if proc.returncode != 0:
+        if "No module named 'PIL'" in proc.stderr:
+            return _stdlib_metadata(image_path, proc.stderr)
         raise HTTPException(status_code=500, detail={"error": "GeoINT metadata failed", "stderr": proc.stderr[-2000:]})
 
     meta_json = out_dir / "meta.json"
@@ -58,6 +61,60 @@ def _run_meta(image_path: Path, out_dir: Path) -> dict:
     return {
         "meta": json.loads(meta_json.read_text(encoding="utf-8")) if meta_json.exists() else {},
         "markdown": meta_md.read_text(encoding="utf-8") if meta_md.exists() else proc.stdout,
+    }
+
+
+def _image_size(path: Path) -> tuple[int | None, int | None, str]:
+    data = path.read_bytes()
+    if data.startswith(b"\x89PNG\r\n\x1a\n") and len(data) >= 24:
+        width, height = struct.unpack(">II", data[16:24])
+        return width, height, "PNG"
+    if data[:3] == b"\xff\xd8\xff":
+        i = 2
+        while i + 9 < len(data):
+            while i < len(data) and data[i] == 0xFF:
+                i += 1
+            marker = data[i] if i < len(data) else None
+            i += 1
+            if marker in {0xC0, 0xC1, 0xC2, 0xC3, 0xC5, 0xC6, 0xC7, 0xC9, 0xCA, 0xCB, 0xCD, 0xCE, 0xCF}:
+                height, width = struct.unpack(">HH", data[i + 3 : i + 7])
+                return width, height, "JPEG"
+            if i + 2 > len(data):
+                break
+            seg_len = struct.unpack(">H", data[i : i + 2])[0]
+            if seg_len < 2:
+                break
+            i += seg_len
+    if data.startswith(b"RIFF") and data[8:12] == b"WEBP":
+        return None, None, "WEBP"
+    return None, None, "image"
+
+
+def _stdlib_metadata(path: Path, stderr: str) -> dict:
+    width, height, fmt = _image_size(path)
+    filename = path.name
+    lines = [
+        f"# Metadata: {filename}",
+        "",
+        "GeoINT web fallback ran without Pillow on this host.",
+        "",
+        "- No GPS found by the lightweight fallback.",
+        "- No capture time found by the lightweight fallback.",
+        f"- **Image**: {fmt}" + (f" [{width}, {height}]" if width and height else ""),
+        "- Deep EXIF parsing needs Pillow/exiftool support on the deployment host.",
+    ]
+    if "WhatsApp" in filename:
+        lines.insert(4, "- **Filename**: WhatsApp export")
+    return {
+        "meta": {
+            "fallback": True,
+            "format": fmt,
+            "width": width,
+            "height": height,
+            "filename": filename,
+            "stderr_tail": stderr[-500:],
+        },
+        "markdown": "\n".join(lines),
     }
 
 
@@ -116,4 +173,3 @@ async def analyze(file: UploadFile = File(...)) -> JSONResponse:
                 "meta": result["meta"],
             }
         )
-
