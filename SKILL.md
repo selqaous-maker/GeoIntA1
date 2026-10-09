@@ -20,10 +20,10 @@ shell command).
 
 ## 0. Every photo gets its own archive (default workflow)
 
-Before analysing, read `references/workflow.md` once per session. In short:
+Before analysing, read `workflow.md` once per session. In short:
 
 ```bash
-python3 ${CLAUDE_SKILL_DIR}/scripts/photo_session.py start --image "/absolute/path/photo.jpg"   # prints the new folder
+python3 ${CLAUDE_SKILL_DIR}/photo_session.py start --image "/absolute/path/photo.jpg"   # prints the new folder
 cd "<that folder>"                                                                              # every output lives here
 ```
 
@@ -83,7 +83,7 @@ precision than you have. Say which speed you used.
 12. **No Google Street View is not "no street level".** Probe every provider (`pano.py coverage`), then search
     the web in the local languages for national, local and historical panorama sites, and use the browser for
     Google Maps photo spheres and place photos, Mapillary and KartaView. A site you find becomes a manifest and
-    is swept like any provider (`references/streetlevel.md`). The decisive imagery is often there.
+    is swept like any provider (`streetlevel.md`). The decisive imagery is often there.
 13. **Sweep towns, don't sample them.** Once a source covers a candidate town, index every panorama of it and
     rank them all (`sweep.py`); then the next town. A 15 % sample missed the answer that a full sweep put first
     of 9,203. In deep mode, don't settle on a town-level answer before the candidate towns have been swept.
@@ -128,7 +128,7 @@ gut becomes calibrated over time. If nothing comes, write that — it tells you 
 ## Step 2 — Recon: one local command
 
 ```bash
-uv run ${CLAUDE_SKILL_DIR}/scripts/recon.py original/<photo> --out-dir recon     # ~30–60 s after the first run
+uv run ${CLAUDE_SKILL_DIR}/recon.py original/<photo> --out-dir recon     # ~30–60 s after the first run
 ```
 
 It runs, in parallel: deep metadata (`meta.py`), edge/corner crops, OCR with automatic language detection and
@@ -141,7 +141,7 @@ Then reconcile with your gut call:
 - **They disagree** → find out why before going on: an OCR misread, an unusual scene that fools the model, a
   feature you misjudged. Write the reason down; either side can be wrong.
 
-What the pieces are worth (details in `references/models.md`):
+What the pieces are worth (details in `models.md`):
 - **Metadata**: GPS is a strong lead but must be confirmed by the scene; the UTC offset narrows countries for
   that date; filename patterns reveal the app (WhatsApp, WeChat, KakaoTalk, stock agencies with searchable IDs);
   embedded previews can show the uncropped original (a RAW file's full-size preview often shows past the edit's
@@ -176,7 +176,7 @@ Every legible string is a search query. Use your web-search tool aggressively an
   locator or "<brand> <town>" for branches.
 - **Route numbers and road names**: `osm.py route` / `osm.py find` turn them into corridors; search the name.
 - **Distinctive objects** (a statue, a church, a mural, an odd sign): describe them in words and search images
-  in the local language, with and without the suspected town (`references/search.md`).
+  in the local language, with and without the suspected town (`search.md`).
 - **Place names in the text**: `textgeo.py` lists every GeoNames match; `textgeo.py --country XX --deep` searches
   the full national gazetteer (villages, hills, rivers).
 - **Facts to confirm a hunch**: "do <country> use yellow plates", "<country> bollard", "<region> roof tiles" —
@@ -185,7 +185,7 @@ Every legible string is a search query. Use your web-search tool aggressively an
 **Reverse image search** (pre-approved; run it every time unless the answer is already certain):
 - Scripted: `recon.py` already ran Yandex + Baidu on the original plus crops/flips (`recon/intake/rev/`, summary
   in `recon.md`); re-run on a tight crop of a distinctive object with
-  `uv run ${CLAUDE_SKILL_DIR}/scripts/intake.py original/<photo> --box x0,y0,x1,y1 --out-dir rev_crop`. Strong for
+  `uv run ${CLAUDE_SKILL_DIR}/intake.py original/<photo> --box x0,y0,x1,y1 --out-dir rev_crop`. Strong for
   buildings, streets and anything posted in China.
 - **Google Lens** through the owner's own browser, when a browser- or computer-control tool for their Chrome is
   available (Claude in Chrome, Codex computer use): open `https://lens.google.com/`, upload the original or a tight crop with the
@@ -200,16 +200,16 @@ Every legible string is a search query. Use your web-search tool aggressively an
 
 ## Step 4 — Country (when Step 1–3 did not already settle it)
 
-Follow `references/country-funnel.md`. The short version:
+Follow `country-funnel.md`. The short version:
 
 ```bash
-uv run ${CLAUDE_SKILL_DIR}/scripts/board.py init --photo original/<photo>
-uv run ${CLAUDE_SKILL_DIR}/scripts/board.py apply --kind driving-side --value left|right      # whole category on the board
-uv run ${CLAUDE_SKILL_DIR}/scripts/board.py ingest recon/textgeo.json                         # after checking the signals
-uv run ${CLAUDE_SKILL_DIR}/scripts/board.py ingest recon/prior/prior.json                     # model status: ranks only
-uv run ${CLAUDE_SKILL_DIR}/scripts/board.py clue "red laterite soil, eucalyptus" --kind vegetation --status observed
-uv run ${CLAUDE_SKILL_DIR}/scripts/board.py evidence --clue K5 --for Kenya:3 --for Uganda:3 --against "South Africa":0.5 --why "…"
-uv run ${CLAUDE_SKILL_DIR}/scripts/board.py rank && uv run ${CLAUDE_SKILL_DIR}/scripts/board.py next
+uv run ${CLAUDE_SKILL_DIR}/board.py init --photo original/<photo>
+uv run ${CLAUDE_SKILL_DIR}/board.py apply --kind driving-side --value left|right      # whole category on the board
+uv run ${CLAUDE_SKILL_DIR}/board.py ingest recon/textgeo.json                         # after checking the signals
+uv run ${CLAUDE_SKILL_DIR}/board.py ingest recon/prior/prior.json                     # model status: ranks only
+uv run ${CLAUDE_SKILL_DIR}/board.py clue "red laterite soil, eucalyptus" --kind vegetation --status observed
+uv run ${CLAUDE_SKILL_DIR}/board.py evidence --clue K5 --for Kenya:3 --for Uganda:3 --against "South Africa":0.5 --why "…"
+uv run ${CLAUDE_SKILL_DIR}/board.py rank && uv run ${CLAUDE_SKILL_DIR}/board.py next
 ```
 
 In quick mode the board is optional once read evidence (text, plates, phone, brand) settles the country; use
@@ -220,12 +220,13 @@ it whenever the country is still open, and always in deep mode. A clue recorded 
 To separate two or three look-alike countries, compare against reality instead of memory:
 
 ```bash
-uv run ${CLAUDE_SKILL_DIR}/scripts/refsheet.py countries KE,UG,TZ --n 6 --out ref_ke_ug_tz.jpg    # real Street View rows per country
-uv run ${CLAUDE_SKILL_DIR}/scripts/refsheet.py countries US --n 6 --pitch -10 --side right         # tilt down for road paint/curbs
+uv run ${CLAUDE_SKILL_DIR}/refsheet.py countries KE,UG,TZ --n 6 --out ref_ke_ug_tz.jpg    # real Street View rows per country
+uv run ${CLAUDE_SKILL_DIR}/refsheet.py countries US --n 6 --pitch -10 --side right         # tilt down for road paint/curbs
 ```
 
-and read the matching regional file in `references/world/` (Europe, Americas, Asia, Oceania, Africa & Middle
-East, China, plus `streetview.md` for game imagery). Record what decided it as evidence with a comparison file.
+and read the matching regional file (`europe.md`, `americas.md`, `asia.md`, `oceania.md`,
+`africa-middle-east.md`, `china.md`, plus `streetview.md` for game imagery). Record what decided it as evidence
+with a comparison file.
 
 ## Step 5 — Region, town, neighbourhood
 
@@ -239,11 +240,11 @@ East, China, plus `streetview.md` for game imagery). Record what decided it as e
 - Towns: `geodata.py towns <CC> --admin1 "<region>" --json > towns.json` lists every sizable town; compare their
   fabric at one scale (`tiles.py sheet --points towns.json --zoom 15 --size 640`: grid or medina, street width,
   river, relief) and keep those that can produce the photo; then `pano.py coverage` on each survivor.
-- Climate, vegetation, terrain and architecture gradients inside the country (`references/world/*.md`).
+- Climate, vegetation, terrain and architecture gradients inside the country (regional Markdown reference files).
 - Shops, schools, churches and other named places in the text → `poi.py "<name>" --city <town>` / web search.
 - Neighbouring towns look alike? Street furniture is bought per city (hydrants, bins, street-name signs, lamp
   posts): `refsheet.py towns --points towns.json --pitch -12 --side right` puts one row per town side by side.
-- **Turn the rarest clue you are sure of into a filter** (`references/datasets.md`): a coloured bus lane, a less
+- **Turn the rarest clue you are sure of into a filter** (`datasets.md`): a coloured bus lane, a less
   common street-tree species, a posted speed limit, a building height beside a stop or a school. City open data
   (`opendata.py`) and OSM tags (`osm.py find/near/addr`) collapse a city to a short list of points; check them
   on satellite and street level with three or four deal-breakers in mind. Filter on the one attribute you are
@@ -290,7 +291,7 @@ expect added floors, new render and grown trees, and never decide on local-featu
 
 ## Step 7 — Verify, falsify, red-team
 
-Before you call it (`references/verify.md`):
+Before you call it (`verify.md`):
 - Write 2–3 falsification conditions *before* looking at the candidate ("give up if the road bends left").
 - Bearing self-check: left/right order, near/far occlusion, sun direction and shadows must all fit the
   candidate camera position.
@@ -317,7 +318,7 @@ Save `report.md` (gut call, decisive clues with files, commands run, alternative
 excluded candidates and why, unresolved clues, confidence and radius, source links), then:
 
 ```bash
-python3 ${CLAUDE_SKILL_DIR}/scripts/photo_session.py finish "$PWD" --country "…" --region "…" --city "…" \
+python3 ${CLAUDE_SKILL_DIR}/photo_session.py finish "$PWD" --country "…" --region "…" --city "…" \
   --latitude … --longitude … --confidence high|medium|low
 ```
 
@@ -329,14 +330,14 @@ inside the unit is better supported, use the unit's population-weighted centre (
 one per region) and state the radius honestly ("city level, ~10 km"). The no-midpoint rule is about rival
 candidates; a centre *within* the one settled unit is fine.
 
-Lead the answer with the owner's format (see `references/workflow.md`): bold country/region/city line, bold
+Lead the answer with the owner's format (see `workflow.md`): bold country/region/city line, bold
 coordinates line (DMS and decimal), a confidence/accuracy line, the decisive clues, the evidence image, and
 finally the exact analysis timestamp with links to the renamed folder and its `report.md`. When the real
 location becomes known, record it: `photo_session.py truth <folder> --latitude … --longitude … --country …`.
 
 ## Special situations
 
-- **Street View / GeoGuessr screenshots**: `references/world/streetview.md` (camera generation, car, coverage,
+- **Street View / GeoGuessr screenshots**: `streetview.md` (camera generation, car, coverage,
   © year — the display year, not the capture year; `gsv.py near` gives real capture dates). Coverage itself is a
   prior: official imagery follows roads in covered countries (`board.py apply --kind coverage --value streetview`,
   default weight when the © Google watermark is visible; add `--status observed` when it only looks like Street View).
@@ -344,22 +345,22 @@ location becomes known, record it: `photo_session.py truth <folder> --latitude �
   the field of view is the viewer's setting (often ~90°). The smeared patch at the bottom of the frame is the
   blurred camera car, not a shadow — its colour and roof gear are themselves clues (`streetview.md`).
 - **Historical photos, scans, postcards**: the world prior is useless; lean on architecture, vehicles, text,
-  archives, reverse search and `references/search.md`; dating clues matter as much as place. Old plates are
+  archives, reverse search and `search.md`; dating clues matter as much as place. Old plates are
   often regional where today's are not (Italy to 1994, Spain to 2000, France to 2009): read the code with
   `imgprep.py reveal`, then `clues.py lookup plate-code <code>` gives the province and the years it was used.
   For the street: the oldest street-level imagery of each candidate town (local archives often beat Google),
   `tiles.py wayback`, historical aerials (`data-sources.md`), a full `sweep.py` (MegaLoc found a 1990s print
-  among 9,203 panoramas from 2013), and the across-years checks in `references/streetlevel.md` §5. A
+  among 9,203 panoramas from 2013), and the across-years checks in `streetlevel.md` §5. A
   black-and-white photo goes into the sweep as it is: colourising measured no better than grayscale (read the
   top 50 and the clusters), and a colourised copy's colours are guesses, never evidence.
 - **Indoor, close-up, product shots**: text, plugs and sockets, packaging, provenance; reverse search; metadata.
 - **Puzzles (图寻 / 网络迷踪 style)**: setters pick obscure places — keep priors uniform, distrust fame, and
-  read `references/world/china.md` for China.
+  read `china.md` for China.
 - **No street-level coverage**: first make sure — `pano.py coverage`, a web search for local and historical
-  panorama sites, Google Maps photo spheres in the browser (`references/streetlevel.md` §1). Then satellite scan
-  + terrain + ground photos from news/encyclopedias/Commons (`references/verify.md` §4).
+  panorama sites, Google Maps photo spheres in the browser (`streetlevel.md` §1). Then satellite scan
+  + terrain + ground photos from news/encyclopedias/Commons (`verify.md` §4).
 
-## Toolbox (all `uv run ${CLAUDE_SKILL_DIR}/scripts/<name>`)
+## Toolbox (all `uv run ${CLAUDE_SKILL_DIR}/<name>`)
 
 | Script | Use it for |
 |---|---|

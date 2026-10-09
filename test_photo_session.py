@@ -8,7 +8,7 @@ import sys
 import tempfile
 import unittest
 
-SCRIPT = Path(__file__).resolve().parents[1] / "scripts" / "photo_session.py"
+SCRIPT = Path(__file__).resolve().parent / "photo_session.py"
 
 
 class PhotoArchiveTests(unittest.TestCase):

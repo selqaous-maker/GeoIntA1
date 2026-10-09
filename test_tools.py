@@ -3,7 +3,7 @@
 # requires-python = ">=3.12"
 # dependencies = ["numpy", "pillow", "phonenumbers>=8.13", "lingua-language-detector>=2.0"]
 # ///
-"""Offline checks for the newer tools. Run: uv run tests/test_tools.py
+"""Offline checks for the newer tools. Run: uv run test_tools.py
 Network-free: GeoNames- and brand-index-dependent checks are skipped when those caches are absent."""
 from __future__ import annotations
 
@@ -20,8 +20,8 @@ from pathlib import Path
 import numpy as np
 from PIL import Image
 
-ROOT = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(ROOT / "scripts"))
+ROOT = Path(__file__).resolve().parent
+sys.path.insert(0, str(ROOT))
 import geodata  # noqa: E402
 import textgeo  # noqa: E402
 import meta  # noqa: E402
@@ -153,7 +153,7 @@ class MetaTests(unittest.TestCase):
 
 class BoardTests(unittest.TestCase):
     def run_board(self, d: Path, *args):
-        return subprocess.run([sys.executable, str(ROOT / "scripts" / "board.py"), *args], cwd=d, capture_output=True, text=True)
+        return subprocess.run([sys.executable, str(ROOT / "board.py"), *args], cwd=d, capture_output=True, text=True)
 
     def test_ingest_caps_model_and_model_cannot_exclude(self):
         with tempfile.TemporaryDirectory() as d:

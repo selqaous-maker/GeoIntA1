@@ -37,7 +37,10 @@ sys.path.insert(0, str(Path(__file__).parent))
 import geo  # noqa: E402
 import osm  # noqa: E402
 
-DATA = Path(__file__).parent.parent / "data"
+HERE = Path(__file__).resolve().parent
+DATA = HERE.parent / "data"
+if not DATA.exists():
+    DATA = HERE
 LEVEL_NAMES = {"CN": {4: "province", 5: "prefecture", 6: "county", 7: "township"}, "FR": {4: "region", 6: "department", 8: "commune"},
                "US": {4: "state", 6: "county", 8: "city"}, "*": {2: "country", 4: "first-level admin division", 6: "second-level admin division", 8: "third-level admin division"}}
 MIN_COVER = 0.3   # children auto level pick: this level's combined bbox area must be at least this fraction of the parent's bbox

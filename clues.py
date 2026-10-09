@@ -39,7 +39,10 @@ import sys
 from datetime import date
 from pathlib import Path
 
-DATA = Path(__file__).parent.parent / "data"
+HERE = Path(__file__).resolve().parent
+DATA = HERE.parent / "data"
+if not DATA.exists():
+    DATA = HERE
 UA = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36"
 
 SOURCES = {

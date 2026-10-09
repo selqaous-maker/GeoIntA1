@@ -116,7 +116,10 @@ def diagnose(network: bool, proxy: str | None) -> dict:
         rows.append(check("Working directory", "PASS", "Writable; reports and .geo-cache can be created here."))
     except OSError:
         rows.append(check("Working directory", "FAIL", "Cannot write here.", "Run from a writable folder."))
-    data = Path(__file__).resolve().parent.parent / "data"
+    here = Path(__file__).resolve().parent
+    data = here.parent / "data"
+    if not data.exists():
+        data = here
     names = ("cn_plates", "cn_area_codes", "calling_codes", "driving_side", "territories", "cn_admin", "countries", "text_signals",
              "streetview_coverage")
     bad = []
@@ -126,7 +129,7 @@ def diagnose(network: bool, proxy: str | None) -> dict:
         except (OSError, ValueError):
             bad.append(name)
     rows.append(check("Lookup tables", "FAIL" if bad else "PASS", "Missing or invalid: " + ", ".join(bad) if bad else f"All {len(names)} tables are readable.",
-                      "Reinstall the complete skill folder (including data/)." if bad else ""))
+                      "Reinstall the complete skill folder with all JSON lookup tables." if bad else ""))
     route = "configured proxy" if resolve_proxy(proxy) else "direct"
     rows.append(check("Service connection", "PASS", f"Using {route}."))
     rows.append(asyncio.run(browser_check(proxy)))
@@ -140,14 +143,14 @@ def diagnose(network: bool, proxy: str | None) -> dict:
     cache = Path(os.environ.get("GEOINT_CACHE") or Path.home() / ".cache" / "geoint")
     gn = list((cache / "geonames").glob("cities500*.pkl"))
     rows.append(check("GeoNames places", "PASS" if gn else "INFO", "Cached." if gn else "Not downloaded yet (14 MB, fetched on first use).",
-                      "" if gn else "uv run scripts/geodata.py fetch"))
+                      "" if gn else "uv run geodata.py fetch"))
     nsi = (cache / "nsi" / "nsi.min.json").exists()
     rows.append(check("Brand index", "PASS" if nsi else "INFO", "Cached." if nsi else "Not downloaded yet (12 MB, fetched on first textgeo.py run)."))
     hf = Path(os.environ.get("HF_HOME") or Path.home() / ".cache" / "huggingface") / "hub"
     for name, folder in MODEL_CACHES.items():
         ok = (hf / folder).exists()
         rows.append(check(name, "PASS" if ok else "INFO", "Weights cached." if ok else "Downloads on first use.",
-                          "" if ok else "uv run scripts/doctor.py --models"))
+                          "" if ok else "uv run doctor.py --models"))
     gc = (Path.home() / ".cache" / "torch" / "hub" / "geocalib" / "pinhole.tar").exists()
     rows.append(check("GeoCalib (calib.py)", "PASS" if gc else "INFO", "Weights cached." if gc else "Downloads on first use (~100 MB)."))
     rows.append(check("Other ML models", "INFO", "match.py (DINOv2/CLIP) and sat_scan.py (CLIP) download weights on first use."))

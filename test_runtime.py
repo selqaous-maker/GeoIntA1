@@ -3,7 +3,7 @@
 # requires-python = ">=3.10"
 # dependencies = ["pillow", "numpy"]
 # ///
-"""Offline runtime regressions. Run: uv run tests/test_runtime.py"""
+"""Offline runtime regressions. Run: uv run test_runtime.py"""
 from __future__ import annotations
 
 import asyncio
@@ -20,7 +20,7 @@ from types import SimpleNamespace
 import unittest
 from unittest.mock import AsyncMock, patch
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
+sys.path.insert(0, str(Path(__file__).resolve().parent))
 import _net
 import _browser
 import baidu_pano

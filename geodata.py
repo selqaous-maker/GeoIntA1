@@ -51,6 +51,8 @@ from _net import PROXY_HELP, curl_args  # noqa: E402
 
 HERE = Path(__file__).resolve().parent
 DATA = HERE.parent / "data"
+if not DATA.exists():
+    DATA = HERE
 GEONAMES = "https://download.geonames.org/export/dump/"
 PLACES_FILE = "cities500"
 CACHE_VERSION = 3

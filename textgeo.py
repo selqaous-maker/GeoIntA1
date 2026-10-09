@@ -43,7 +43,10 @@ import geodata  # noqa: E402
 from _net import PROXY_HELP  # noqa: E402
 
 HERE = Path(__file__).resolve().parent
-SIG = json.loads((HERE.parent / "data" / "text_signals.json").read_text(encoding="utf-8"))
+DATA = HERE.parent / "data"
+if not DATA.exists():
+    DATA = HERE
+SIG = json.loads((DATA / "text_signals.json").read_text(encoding="utf-8"))
 NSI_URL = "https://cdn.jsdelivr.net/npm/name-suggestion-index@8.0.20260918/dist/json/nsi.min.json"
 M49 = {"001": "world", "150": "Europe", "002": "Africa", "019": "Americas", "142": "Asia", "009": "Oceania",
        "419": "Latin America and the Caribbean", "021": "Northern America", "005": "South America",
