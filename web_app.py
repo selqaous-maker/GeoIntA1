@@ -42,7 +42,12 @@ def _run_meta(image_path: Path, out_dir: Path) -> dict:
         raise HTTPException(status_code=500, detail="GeoINT meta.py not found")
 
     env = os.environ.copy()
-    env["PYTHONPATH"] = str(meta_py.parent)
+    existing_pythonpath = env.get("PYTHONPATH")
+    env["PYTHONPATH"] = (
+        str(meta_py.parent)
+        if not existing_pythonpath
+        else os.pathsep.join([str(meta_py.parent), existing_pythonpath])
+    )
     proc = subprocess.run(
         [sys.executable, str(meta_py), str(image_path), "--out-dir", str(out_dir)],
         cwd=ROOT,
