@@ -24,6 +24,25 @@ UV_CACHE_DIR=/tmp/uv-cache uv run doctor.py --json
 The repository uses a flat layout: `SKILL.md`, Python tools, Markdown references, and JSON lookup tables live in
 the same folder.
 
+## Web App
+
+This repo also includes a lightweight FastAPI web wrapper:
+
+```bash
+pip install -r requirements.txt
+uvicorn web_app:app --reload
+```
+
+Open `http://127.0.0.1:8000`.
+
+Deploy options:
+
+- Render/Railway/Fly/VPS: use `Procfile` or run `uvicorn web_app:app --host 0.0.0.0 --port $PORT`.
+- Vercel: `vercel.json` is included for the metadata MVP endpoint.
+
+Current web scope: image upload, metadata extraction, GPS detection when present, WhatsApp/export/EXIF report.
+Deep visual geolocation still works best through the agent workflow because it needs browser/search/model tools.
+
 ## Lookup Data
 
 `clues.py lookup` reads the JSON in this directory. Each file's `_meta` records the source URL, fetch date, and entry count; `clues.py update` refetches from `_meta.source`.

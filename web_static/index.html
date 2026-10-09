@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>GeoINT Web</title>
+    <link rel="stylesheet" href="/static/styles.css" />
+  </head>
+  <body>
+    <main class="shell">
+      <section class="hero">
+        <p class="eyebrow">GeoINT Web</p>
+        <h1>Upload a photo. Read the first location clues.</h1>
+        <p>Metadata, GPS when present, WhatsApp export signs, dimensions, and a clean report.</p>
+        <span id="health">Checking backend...</span>
+      </section>
+      <section class="tool">
+        <label class="drop">
+          <input id="file" type="file" accept="image/*,.heic,.heif" />
+          <strong>Choose image</strong>
+          <small>JPG, PNG, WEBP, HEIC. Max 12 MB.</small>
+        </label>
+        <div class="preview">
+          <img id="preview" alt="" />
+          <span id="empty">No image selected</span>
+        </div>
+        <button id="analyze" disabled>Analyze</button>
+      </section>
+      <section id="result" class="result" hidden>
+        <div class="cards">
+          <div><small>Country</small><strong id="country">-</strong></div>
+          <div><small>Place</small><strong id="place">-</strong></div>
+          <div><small>Confidence</small><strong id="confidence">-</strong></div>
+        </div>
+        <pre id="report"></pre>
+      </section>
+    </main>
+    <script src="/static/app.js"></script>
+  </body>
+</html>
